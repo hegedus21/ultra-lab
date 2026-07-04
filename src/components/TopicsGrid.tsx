@@ -94,6 +94,8 @@ export default function TopicsGrid({
                 letterSpacing: "0.04em",
                 color: "var(--ink)",
                 marginBottom: 4,
+                wordBreak: "break-word",
+                hyphens: "auto",
               }}
             >
               {topic.label}

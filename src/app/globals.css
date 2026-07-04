@@ -21,6 +21,10 @@ body {
   overflow-x: hidden;
 }
 
+* {
+  min-width: 0;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -85,5 +89,62 @@ body {
     height: 1px;
     background: #2a5a10;
     display: block;
+  }
+}
+
+.footer-wrap {
+  background: var(--forest);
+  padding: 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.footer-logo {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  flex-shrink: 0;
+}
+.footer-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.footer-link {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+.footer-link:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+.footer-copy {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+}
+@media (min-width: 768px) {
+  .footer-wrap {
+    padding: 52px 56px;
+  }
+}
+@media (max-width: 767px) {
+  .footer-wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+  .footer-links {
+    gap: 16px;
   }
 }
