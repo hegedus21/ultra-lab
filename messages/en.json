@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "knowledge": "Knowledge",
+    "athletes": "Athletes",
+    "topics": "Topics",
+    "about": "About"
+  },
+  "hero": {
+    "label": "Ultra Lab · knowledge base",
+    "title_1": "Go",
+    "title_2": "further.",
+    "title_3": "Know",
+    "title_4": "more.",
+    "desc": "The deepest ultra running knowledge in one place. Strategies, experiences and proven methods from top runners.",
+    "stat_interviews": "Interviews",
+    "stat_topics": "Topics",
+    "stat_yards": "Yards",
+    "scroll": "Scroll"
+  },
+  "sections": {
+    "featured": "Featured interview",
+    "topics": "Topics",
+    "articles": "Latest articles",
+    "sources": "Monitored channels",
+    "pipeline": "Automated content"
+  },
+  "article": {
+    "read": "Read more",
+    "min_read": "min read"
+  },
+  "pipeline": {
+    "title_1": "New interview?",
+    "title_2": "Instantly",
+    "title_3": "becomes knowledge.",
+    "desc": "Ultra Lab continuously monitors top podcast channels and YouTube sources. When new content appears, it automatically processes and sends it for review.",
+    "step1_title": "Source monitoring",
+    "step1_desc": "Daily automatic check of all YouTube channels",
+    "step2_title": "Transcript download",
+    "step2_desc": "Free youtube-transcript-api, no API key needed",
+    "step3_title": "Article generation",
+    "step3_desc": "Claude AI writes a structured knowledge article",
+    "step4_title": "Review & publish",
+    "step4_desc": "Email notification – you edit and publish"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "knowledge": "Tudástár",
+    "athletes": "Futók",
+    "topics": "Témák",
+    "about": "Rólunk"
+  },
+  "hero": {
+    "label": "Ultra Lab · tudástár",
+    "title_1": "Menj",
+    "title_2": "tovább.",
+    "title_3": "Tudj",
+    "title_4": "többet.",
+    "desc": "Az ultrafutás legmélyebb tudása egy helyen. Top futók stratégiái, tapasztalatai és bevált módszerei.",
+    "stat_interviews": "Interjú",
+    "stat_topics": "Témakör",
+    "stat_yards": "Yard",
+    "scroll": "Görgess"
+  },
+  "sections": {
+    "featured": "Kiemelt interjú",
+    "topics": "Témakörök",
+    "articles": "Legújabb cikkek",
+    "sources": "Figyelt csatornák",
+    "pipeline": "Automatizált tartalom"
+  },
+  "article": {
+    "read": "Elolvasom",
+    "min_read": "perc olvasás"
+  },
+  "pipeline": {
+    "title_1": "Új interjú?",
+    "title_2": "Azonnal",
+    "title_3": "tudástárrá válik.",
+    "desc": "Az Ultra Lab folyamatosan figyeli a top podcast csatornákat és YouTube forrásokat. Új tartalom megjelenésekor automatikusan feldolgozza és review-ra küldi.",
+    "step1_title": "Forrás figyelés",
+    "step1_desc": "YouTube csatornák napi automatikus ellenőrzése",
+    "step2_title": "Felirat letöltés",
+    "step2_desc": "Ingyenes youtube-transcript-api, nem kell API kulcs",
+    "step3_title": "Cikk generálás",
+    "step3_desc": "Claude AI strukturált tudástár cikket ír belőle",
+    "step4_title": "Review & publikálás",
+    "step4_desc": "Email értesítés – te szerkesztesz és publikálsz"
+  }
+}
