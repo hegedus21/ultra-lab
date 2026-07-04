@@ -2,44 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
-  --forest:  #0F1A12;
-  --forest2: #1A2E1F;
-  --accent:  #A8FF3E;
-  --chalk:   #F5F0E8;
-  --dawn:    #EAD9C2;
-  --ink:     #111111;
-  --mist:    #667070;
-  --card:    #EDE8DF;
+  --forest: #0f1a12;
+  --forest2: #1a2e1f;
+  --accent: #a8ff3e;
+  --chalk: #f5f0e8;
+  --dawn: #ead9c2;
+  --ink: #111111;
+  --mist: #667070;
+  --card: #ede8df;
 }
 
-html { scroll-behavior: smooth; }
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   background: var(--chalk);
   color: var(--ink);
   overflow-x: hidden;
 }
 
 @keyframes ticker {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: "Barlow Condensed", sans-serif;
     font-weight: 900;
     text-transform: uppercase;
   }
   .font-mono-label {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
   }
   .eyebrow {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 9px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -50,28 +62,28 @@ body {
     margin-bottom: 48px;
   }
   .eyebrow::after {
-    content: '';
+    content: "";
     width: 44px;
     height: 1px;
     background: var(--accent);
     display: block;
   }
   .eyebrow-dark {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 9px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: #2A5A10;
+    color: #2a5a10;
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 48px;
   }
   .eyebrow-dark::after {
-    content: '';
+    content: "";
     width: 44px;
     height: 1px;
-    background: #2A5A10;
+    background: #2a5a10;
     display: block;
   }
 }
