@@ -148,3 +148,70 @@ body {
     gap: 16px;
   }
 }
+
+/* Article content styles – globals.css-be kerül a hydration hiba elkerüléséhez */
+.article-content {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+  color: #333;
+}
+.article-content h1 {
+  display: none;
+}
+.article-content h2 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 40px 0 16px;
+  letter-spacing: 0.02em;
+}
+.article-content h3 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 28px 0 12px;
+}
+.article-content p {
+  margin: 0 0 20px;
+}
+.article-content ul,
+.article-content ol {
+  margin: 0 0 20px 24px;
+}
+.article-content li {
+  margin-bottom: 8px;
+  line-height: 1.7;
+}
+.article-content strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.article-content em {
+  font-style: italic;
+  color: #555;
+}
+.article-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 20px;
+  margin: 24px 0;
+  color: #555;
+  background: #f9f9f7;
+}
+.article-content hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 32px 0;
+}
+@media (max-width: 767px) {
+  .article-content {
+    font-size: 15px;
+  }
+  .article-content h2 {
+    font-size: 22px;
+  }
+}
