@@ -53,7 +53,7 @@ async function run() {
 
         console.log(`   🤖 Claude cikk generálás...`)
         const generated = await generateArticle({
-          transcript,
+          transcript.text,
           videoTitle: video.title,
           language: source.language as 'en' | 'ru',
         })
