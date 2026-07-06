@@ -46,7 +46,7 @@ async function run() {
         console.log(`   ⬇  Felirat letöltés: ${video.title}`)
         const transcript = await getTranscript(video.videoId)
 
-        if (!transcript || transcript.length < 500) {
+        if (!transcript || transcript.text.length < 500) {
           console.log(`   ❌ Nincs felirat, kihagyva`)
           continue
         }
