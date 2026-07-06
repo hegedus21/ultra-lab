@@ -33,11 +33,11 @@ export async function POST(request: Request) {
 
         // Get transcript
         const transcript = await getTranscript(video.videoId)
-        if (!transcript || transcript.length < 500) continue
+        if (!transcript || transcript.text.length < 500) continue
 
         // Generate article with Claude
         const generated = await generateArticle({
-          transcript,
+          transcript: transcript.text,
           videoTitle: video.title,
           language: source.language as 'en' | 'ru',
         })
