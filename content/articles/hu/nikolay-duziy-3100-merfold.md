@@ -10,6 +10,7 @@ raceTypes: ["multiday"]
 topics: ["mentalis-strategia", "felkeszules", "regeneracio"]
 level: "elit"
 loopNumber: 1
+coverImage: "/images/nikolay-duziy-cover.jpg"
 ---
 
 ![Nikolay Duziy futás közben a New York-i körön](/images/nikolay-duziy-cover.jpg)

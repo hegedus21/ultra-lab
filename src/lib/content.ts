@@ -16,7 +16,8 @@ export interface ArticleFrontmatter {
   raceTypes: RaceType[];
   topics: Topic[];
   level: Level;
-  loopNumber: number; // sorszam a tudastaron belul - "hanyadik kor"
+  loopNumber: number;
+  coverImage?: string;
 }
 
 export interface Article extends ArticleFrontmatter {
