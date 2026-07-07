@@ -1,11 +1,15 @@
 ---
 title: "Nikolay Duziy: A 3100 mérföldes pályafutás spirituális útja"
 slug: "nikolay-duziy-3100-merfold-spiritualis-ut"
-date: "2026-07-07"
 excerpt: "Nikolay Duziy 58 éves orosz ultramaratonista, aki 12 alkalommal fejezte be a világ leghosszabb versenyét — az 5000 km-es New York-i 3100 mérföldes futást. Idén elérte élete legjobb eredményét: 47 nap, 10 óra, 51 perc."
-topic: "mental"
-runner: "Nikolay Duziy"
-cover_image: "/images/nikolay-duziy-cover.jpg"
+date: "2026-07-07"
+athlete: "Nikolay Duziy"
+athleteCountry: "ru"
+sourceLang: "ru"
+raceTypes: ["multi_day"]
+topics: ["mental", "training", "recovery"]
+level: "elite"
+loopNumber: 1
 ---
 
 ![Nikolay Duziy futás közben a New York-i körön](/images/nikolay-duziy-cover.jpg)
