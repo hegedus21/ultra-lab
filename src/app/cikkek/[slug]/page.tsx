@@ -5,9 +5,45 @@ import Header from "@/components/Header";
 import LoopRing from "@/components/LoopRing";
 import { getAllSlugs, getArticleBySlug } from "@/lib/content";
 import { LEVELS, RACE_TYPES, TOPICS } from "@/lib/taxonomy";
+import type { Metadata } from "next";
 
 export function generateStaticParams() {
   return getAllSlugs("hu").map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const article = getArticleBySlug("hu", slug);
+
+  if (!article) return { title: "Cikk nem található" };
+
+  return {
+    title: article.title,
+    description: article.excerpt,
+    openGraph: {
+      title: article.title,
+      description: article.excerpt,
+      images: article.coverImage
+        ? [
+            {
+              url: article.coverImage,
+              width: 1200,
+              height: 630,
+              alt: article.title,
+            },
+          ]
+        : [{ url: "/og-default.jpg", width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.excerpt,
+    },
+  };
 }
 
 export default async function ArticlePage({

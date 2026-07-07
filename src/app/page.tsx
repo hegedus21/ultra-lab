@@ -43,6 +43,22 @@ async function getArticleCount() {
   }
 }
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Ultra Lab – Menj tovább. Tudj többet.",
+  description:
+    "Az ultrafutás legmélyebb tudása egy helyen. Top futók stratégiái, tapasztalatai és bevált módszerei – Backyard Ultra, trail ultra és többnapos versenyek.",
+  openGraph: {
+    title: "Ultra Lab – Menj tovább. Tudj többet.",
+    description:
+      "Az ultrafutás legmélyebb tudása egy helyen. Top futók stratégiái magyarul.",
+    images: [
+      { url: "/hero.jpg", width: 1200, height: 630, alt: "Ultra Lab hero" },
+    ],
+  },
+};
+
 export default async function HomePage() {
   const [articles, count] = await Promise.all([
     getLatestArticles(),

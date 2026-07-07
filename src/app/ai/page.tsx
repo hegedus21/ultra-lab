@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import type { Metadata } from "next";
 
 async function getAiArticles() {
   const supabase = createClient(
@@ -42,6 +43,16 @@ function formatDate(dateStr: string | null): string {
     return "";
   }
 }
+
+export const metadata: Metadata = {
+  title: "AI Szekció – Automatikusan generált cikkek",
+  description:
+    "Mesterséges intelligencia által YouTube interjúkból automatikusan generált ultrafutás cikkek. Backyard Ultra, trail ultra és többnapos verseny tapasztalatok.",
+  openGraph: {
+    title: "AI Szekció | Ultra Lab",
+    description: "AI által generált ultrafutás cikkek YouTube interjúkból.",
+  },
+};
 
 export default async function AiPage() {
   const articles = await getAiArticles();

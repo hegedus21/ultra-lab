@@ -2,6 +2,19 @@ import Header from "@/components/Header";
 import SearchAndFilter from "@/components/SearchAndFilter";
 import { getAllArticles } from "@/lib/content";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tudástár – Minden cikk egy helyen",
+  description:
+    "Szerkesztett, validált ultrafutás cikkek. Felkészülés, táplálkozás, mentális stratégia, felszerelés és versenyeredmények top futóktól.",
+  openGraph: {
+    title: "Tudástár | Ultra Lab",
+    description:
+      "Szerkesztett ultrafutás cikkek – felkészülés, táplálkozás, mentális stratégia.",
+  },
+};
+
 export default function CikkekPage() {
   const articles = getAllArticles("hu");
 

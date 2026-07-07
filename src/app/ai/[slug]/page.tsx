@@ -5,6 +5,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { Metadata } from "next";
 
 const TOPIC_LABELS: Record<string, string> = {
   backyard_ultra: "Backyard Ultra",
@@ -36,6 +37,41 @@ function fixContent(text: string | null): string {
     .replace(/\\n\\n/g, "\n\n")
     .replace(/\\n/g, "\n")
     .replace(/\\t/g, "\t");
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+  const { data: article } = await supabase
+    .from("articles")
+    .select("title_hu, excerpt_hu, runner_name, cover_image")
+    .eq("slug", params.slug)
+    .single();
+
+  if (!article) return { title: "Cikk nem található" };
+
+  return {
+    title: article.title_hu || "AI cikk",
+    description: article.excerpt_hu || undefined,
+    openGraph: {
+      title: article.title_hu || "AI cikk",
+      description: article.excerpt_hu || undefined,
+      images: article.cover_image
+        ? [{ url: article.cover_image, width: 1200, height: 630 }]
+        : [{ url: "/og-default.jpg", width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title_hu || "AI cikk",
+      description: article.excerpt_hu || undefined,
+    },
+  };
 }
 
 export default async function AiArticlePage({
