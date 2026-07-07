@@ -6,9 +6,9 @@ date: "2026-07-07"
 athlete: "Nikolay Duziy"
 athleteCountry: "ru"
 sourceLang: "ru"
-raceTypes: ["multi_day"]
-topics: ["mental", "training", "recovery"]
-level: "elite"
+raceTypes: ["multiday"]
+topics: ["mentalis-strategia", "felkeszules", "regeneracio"]
+level: "elit"
 loopNumber: 1
 ---
 

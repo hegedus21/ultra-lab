@@ -215,3 +215,73 @@ body {
     font-size: 22px;
   }
 }
+
+/* prose-ultra – /cikkek/[slug] markdown stílusok */
+.prose-ultra {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+  color: #333;
+}
+.prose-ultra h2 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 40px 0 16px;
+  letter-spacing: 0.02em;
+}
+.prose-ultra h3 {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 28px 0 12px;
+}
+.prose-ultra p {
+  margin: 0 0 20px;
+}
+.prose-ultra ul,
+.prose-ultra ol {
+  margin: 0 0 20px 24px;
+}
+.prose-ultra li {
+  margin-bottom: 8px;
+  line-height: 1.7;
+}
+.prose-ultra strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.prose-ultra em {
+  font-style: italic;
+  color: #555;
+}
+.prose-ultra img {
+  width: 100%;
+  margin: 32px 0;
+  border-radius: 2px;
+}
+.prose-ultra blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 12px 20px;
+  margin: 24px 0;
+  color: #555;
+  background: #f9f9f7;
+  font-style: italic;
+}
+.prose-ultra hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 32px 0;
+}
+@media (max-width: 767px) {
+  .prose-ultra {
+    font-size: 15px;
+  }
+  .prose-ultra h2 {
+    font-size: 22px;
+  }
+}
