@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
 /**
- * Ultra Lab – Csatorna Pipeline
- * Napi automatikus futtatás GitHub Actions-szel
- * Naponta MAX 1 új cikket generál, csak releváns, 40+ perces videókból
+ * Ultra Lab – Napi Csatorna Pipeline v2
+ * RSS feed alapú új videó észlelés + YouTube API fallback
+ * Minden nap reggel automatikusan fut GitHub Actions-szel
  */
 
 import Anthropic from "@anthropic-ai/sdk"
@@ -15,330 +15,262 @@ import { getTranscript, getVideoDate } from '../src/lib/youtube'
 dotenv.config({ path: path.join(process.cwd(), ".env.local") })
 
 const SEGMENT_SIZE = 45000
-const MAX_NEW_ARTICLES_PER_RUN = 1
-const MIN_VIDEO_DURATION_SECONDS = 40 * 60  // 40 perc
+const MAX_NEW_PER_RUN = 1
+const MIN_TRANSCRIPT = 5000
+const MIN_DURATION_SEC = 40 * 60
 
-// Releváns témák kulcsszavai (videó cím ellenőrzéshez)
-const RELEVANT_KEYWORDS = [
-  // Futás
+const RELEVANT = [
   'ultra', 'marathon', 'maraton', 'backyard', 'trail', 'running', 'futás', 'futó',
-  'bieg', 'бег', 'ультра', 'марафон', 'трейл',
-  // Teljesítmény / egészség
-  'endurance', 'kitartás', 'állóképesség', 'ironman', 'triathlon',
-  'nutrition', 'táplálkozás', 'питание',
-  'recovery', 'regeneráció', 'восстановление',
-  'training', 'edzés', 'тренировка',
-  'mental', 'mentális', 'психология',
-  'mitochondria', 'mitokondrium', 'митохондрии',
-  'hypoxia', 'hipoxia', 'гипоксия',
-  // Versenyek
-  'race', 'verseny', 'соревнование', 'spartatlon', 'spartathlon',
-  'balaton', 'ultrabalaton', '100km', '100 km', '100 mile', '100 mérföld',
-  // Egészség / kutatás
-  'health', 'egészség', 'здоровье', 'research', 'study', 'kutatás',
+  'бег', 'ультра', 'марафон', 'трейл', 'endurance', 'kitartás', 'ironman',
+  'nutrition', 'táplálkozás', 'питание', 'training', 'edzés', 'тренировка',
+  'mental', 'mentális', 'mitochondria', 'митохондрии', 'race', 'verseny',
+  'spartatlon', 'balaton', '100km', '100 km', '100 mile', 'health', 'egészség', 'здоровье',
 ]
+const IRRELEVANT = ['#short', 'shorts', 'clip', 'promo', 'trailer', 'teaser']
 
-const IRRELEVANT_KEYWORDS = [
-  'shorts', '#short', 'clip', 'highlight', 'promo', 'reklám',
-  'teaser', 'trailer', 'announcement',
-]
-
-function isRelevantTitle(title: string): boolean {
-  const lower = title.toLowerCase()
-  if (IRRELEVANT_KEYWORDS.some(kw => lower.includes(kw))) return false
-  return RELEVANT_KEYWORDS.some(kw => lower.includes(kw))
+function isRelevant(title: string): boolean {
+  const l = title.toLowerCase()
+  if (IRRELEVANT.some(k => l.includes(k))) return false
+  return RELEVANT.some(k => l.includes(k))
 }
 
-function langLabel(lang: string): string {
-  if (lang === 'ru') return 'orosz'
-  if (lang === 'hu') return 'magyar'
-  return 'angol'
+function langLabel(lang: string) {
+  return lang === 'ru' ? 'orosz' : lang === 'hu' ? 'magyar' : 'angol'
 }
 
 function slugify(text: string, videoId: string): string {
-  const slug = text
-    .toLowerCase()
-    .replace(/[áàäâ]/g, "a").replace(/[éèëê]/g, "e")
-    .replace(/[íìïî]/g, "i").replace(/[óòöôő]/g, "o")
-    .replace(/[úùüûű]/g, "u")
-    .replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-")
-    .slice(0, 60)
-  return `${slug}-${videoId}`.replace(/^-/, "")
+  return text.toLowerCase()
+    .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e')
+    .replace(/[íìïî]/g, 'i').replace(/[óòöôő]/g, 'o').replace(/[úùüûű]/g, 'u')
+    .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-')
+    .slice(0, 60).replace(/^-/, '') + '-' + videoId
 }
 
-async function getChannelVideos(channelId: string, maxResults = 10): Promise<any[]> {
-  const apiKey = process.env.YOUTUBE_API_KEY
-  if (!apiKey) {
-    console.log("   ⚠️  YOUTUBE_API_KEY hiányzik, csatorna kihagyva")
+// RSS feed alapú lekérés – real-time, nincs API kvóta
+async function getVideosFromRSS(channelId: string): Promise<{ videoId: string, title: string, publishedAt: string }[]> {
+  try {
+    // Ha handle (nem UC...), próbáljuk megszerezni a channel ID-t
+    let cid = channelId
+    if (!channelId.startsWith('UC')) {
+      const apiKey = process.env.YOUTUBE_API_KEY
+      if (apiKey) {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?forHandle=${channelId}&part=id&key=${apiKey}`)
+        const data = await res.json()
+        cid = data.items?.[0]?.id || channelId
+      }
+    }
+
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${cid}`
+    const res = await fetch(rssUrl, { headers: { 'User-Agent': 'Ultra-Lab-Bot/1.0' } })
+    if (!res.ok) return []
+
+    const xml = await res.text()
+    const entries: { videoId: string, title: string, publishedAt: string }[] = []
+
+    // Egyszerű XML parse regex-szel
+    const entryRegex = /<entry>([\s\S]*?)<\/entry>/g
+    let match
+    while ((match = entryRegex.exec(xml)) !== null) {
+      const entry = match[1]
+      const videoIdMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)
+      const titleMatch = entry.match(/<title>([^<]+)<\/title>/)
+      const publishedMatch = entry.match(/<published>([^<]+)<\/published>/)
+
+      if (videoIdMatch && titleMatch) {
+        entries.push({
+          videoId: videoIdMatch[1],
+          title: titleMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'"),
+          publishedAt: publishedMatch?.[1] || new Date().toISOString(),
+        })
+      }
+    }
+    return entries
+  } catch (e) {
     return []
   }
+}
+
+// YouTube API fallback ha RSS nem működik
+async function getVideosFromAPI(channelId: string, apiKey: string): Promise<{ videoId: string, title: string, publishedAt: string }[]> {
   const res = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?channelId=${channelId}&maxResults=${maxResults}&order=date&type=video&part=snippet&key=${apiKey}`
+    `https://www.googleapis.com/youtube/v3/search?channelId=${channelId}&maxResults=15&order=date&type=video&part=snippet&key=${apiKey}`
   )
   const data = await res.json()
-  if (!data.items) return []
-  return data.items.map((item: any) => ({
+  return (data.items || []).map((item: any) => ({
     videoId: item.id.videoId,
     title: item.snippet.title,
     publishedAt: item.snippet.publishedAt,
   }))
 }
 
-async function getVideoDuration(videoId: string): Promise<number> {
-  const apiKey = process.env.YOUTUBE_API_KEY
-  if (!apiKey) return 9999  // Ha nincs API kulcs, ne szűrjük ki
+async function getVideoDuration(videoId: string, apiKey: string): Promise<number> {
+  if (!apiKey) return 9999
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=${apiKey}`
-    )
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=contentDetails&key=${apiKey}`)
     const data = await res.json()
-    const duration = data.items?.[0]?.contentDetails?.duration || 'PT0S'
-    // ISO 8601 duration parse: PT1H23M45S
-    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
-    if (!match) return 0
-    const hours = parseInt(match[1] || '0')
-    const minutes = parseInt(match[2] || '0')
-    const seconds = parseInt(match[3] || '0')
-    return hours * 3600 + minutes * 60 + seconds
-  } catch {
-    return 0
-  }
+    const d = data.items?.[0]?.contentDetails?.duration || 'PT0S'
+    const m = d.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+    return m ? (parseInt(m[1] || '0')) * 3600 + (parseInt(m[2] || '0')) * 60 + (parseInt(m[3] || '0')) : 0
+  } catch { return 0 }
 }
 
-async function extractKeyFacts(client: Anthropic, segment: string, segNum: number, total: number, lang: string): Promise<string> {
-  const response = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 800,
+async function extractKeyFacts(client: Anthropic, segment: string, n: number, total: number, lang: string): Promise<string> {
+  const res = await client.messages.create({
+    model: "claude-haiku-4-5-20251001", max_tokens: 800,
     messages: [{
       role: "user",
-      content: `Ez egy ultrafutós/endurance sport interjú ${segNum}/${total}. része (${langLabel(lang)} nyelven).
-
-Emeld ki a LEGFONTOSABB konkrét információkat:
-- Konkrét számok, adatok, távolságok, tempók
-- Edzésmódszerek, napi/heti rutinok
-- Táplálkozás, felszerelés, mentális technikák
-- Személyes történetek, fordulópontok, eredmények
-
-Max 350 szó, csak konkrétumok.
-
-SZÖVEG:
-${segment}`
+      content: `Ultrafutós interjú ${n}/${total}. rész (${langLabel(lang)}).
+Emeld ki: számok, edzésmódszerek, táplálkozás, felszerelés, mentális technikák, személyes történetek.
+Max 350 szó, csak konkrétumok.\n\n${segment}`
     }]
   })
-  return response.content[0].type === 'text' ? response.content[0].text : ''
+  return res.content[0].type === 'text' ? res.content[0].text : ''
 }
 
 async function generateArticle(client: Anthropic, transcript: string, title: string, lang: string): Promise<any> {
   const segments: string[] = []
-  for (let i = 0; i < transcript.length; i += SEGMENT_SIZE) {
-    segments.push(transcript.slice(i, i + SEGMENT_SIZE))
-  }
-
+  for (let i = 0; i < transcript.length; i += SEGMENT_SIZE) segments.push(transcript.slice(i, i + SEGMENT_SIZE))
   console.log(`   📊 ${transcript.length.toLocaleString()} kar → ${segments.length} szegmens`)
 
   const facts: string[] = []
   for (let i = 0; i < segments.length; i++) {
     process.stdout.write(`   🔍 ${i + 1}/${segments.length}... `)
-    const fact = await extractKeyFacts(client, segments[i], i + 1, segments.length, lang)
-    facts.push(`=== ${i + 1}. RÉSZ ===\n${fact}`)
-    console.log("✅")
+    facts.push(`=== ${i + 1}. RÉSZ ===\n` + await extractKeyFacts(client, segments[i], i + 1, segments.length, lang))
+    console.log('✅')
     await new Promise(r => setTimeout(r, 500))
   }
 
-  process.stdout.write("   ✍️  Cikk generálás... ")
-
-  const response = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4000,
+  process.stdout.write('   ✍️  Cikk... ')
+  const res = await client.messages.create({
+    model: "claude-haiku-4-5-20251001", max_tokens: 4000,
     messages: [{
       role: "user",
-      content: `Te az Ultra Lab ultrafutás tudástár szerkesztője vagy.
-
-Videó: "${title}" (${langLabel(lang)})
-
-Kinyert tények:
-${facts.join('\n\n')}
-
-Írj tudástár cikket. CSAK valid JSON, aposztrófot használj idézőjel helyett:
-
-{
-  "title_hu": "max 80 kar",
-  "title_en": "max 80 chars",
-  "excerpt_hu": "2-3 mondat a legjobb konkrét részlettel",
-  "excerpt_en": "2-3 sentences with best specific detail",
-  "content_hu": "min 600 szó, ## alcímekkel, **kiemelésekkel**, minden konkrét adat belekerül",
-  "content_en": "min 600 words, same structure",
-  "topics": ["backyard_ultra","nutrition","training","mental","sleep","gear","race_strategy","recovery"],
-  "level": "beginner/advanced/elite",
-  "runner_name": "név vagy null"
-}`
+      content: `Ultra Lab tudástár. Videó: "${title}" (${langLabel(lang)})\n\nTények:\n${facts.join('\n\n')}\n\nÍrj cikket. CSAK JSON, aposztróf idézőjel helyett:\n{\n  "title_hu": "max 80 kar",\n  "title_en": "max 80 chars",\n  "excerpt_hu": "2-3 mondat",\n  "excerpt_en": "2-3 sentences",\n  "content_hu": "min 600 szó ## alcímekkel **kiemelésekkel**",\n  "content_en": "min 600 words",\n  "topics": ["backyard_ultra","nutrition","training","mental","sleep","gear","race_strategy","recovery"],\n  "level": "beginner/advanced/elite",\n  "runner_name": "név vagy null"\n}`
     }]
   })
 
-  const raw = response.content[0].type === "text" ? response.content[0].text : ""
-  let text = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
-
-  if (!text.endsWith("}")) {
-    const lastComma = text.lastIndexOf('",\n')
-    if (lastComma > 0) {
-      text = text.slice(0, lastComma + 1) + '\n  "level": "advanced",\n  "runner_name": null\n}'
-    }
+  const raw = res.content[0].type === 'text' ? res.content[0].text : ''
+  let text = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+  if (!text.endsWith('}')) {
+    const lc = text.lastIndexOf('",\n')
+    text = lc > 0 ? text.slice(0, lc + 1) + '\n  "level": "advanced",\n  "runner_name": null\n}' : text + '"}'
   }
-
   try { return JSON.parse(text) }
-  catch {
-    return {
-      title_hu: title, title_en: title,
-      excerpt_hu: "Ultra futás tapasztalatok.",
-      excerpt_en: "Ultra running experiences.",
-      content_hu: "", content_en: "",
-      topics: ["training"], level: "advanced", runner_name: null,
-    }
-  }
+  catch { return { title_hu: title, title_en: title, excerpt_hu: '', excerpt_en: '', content_hu: '', content_en: '', topics: ['training'], level: 'advanced', runner_name: null } }
 }
 
-const TOPICS_VALID = ["backyard_ultra", "nutrition", "training", "mental", "sleep", "gear", "race_strategy", "recovery"]
+const VALID_TOPICS = ["backyard_ultra", "nutrition", "training", "mental", "sleep", "gear", "race_strategy", "recovery"]
 
 async function main() {
-  console.log("\n🏃 Ultra Lab – Napi Csatorna Pipeline")
-  console.log(`📅 ${new Date().toLocaleDateString('hu-HU')} | Max ${MAX_NEW_ARTICLES_PER_RUN} új cikk`)
-  console.log("=".repeat(60))
+  console.log(`\n🏃 Ultra Lab – Napi Pipeline v2`)
+  console.log(`📅 ${new Date().toLocaleDateString('hu-HU')} | Max ${MAX_NEW_PER_RUN} új cikk`)
+  console.log(`📡 RSS feed + YouTube API\n` + '='.repeat(60))
 
   const required = ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY"]
   const missing = required.filter(k => !process.env[k])
-  if (missing.length > 0) {
-    console.error("❌ Hiányzó env:", missing.join(", "))
-    process.exit(1)
-  }
+  if (missing.length) { console.error('❌ Hiányzó env:', missing.join(', ')); process.exit(1) }
 
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  const apiKey = process.env.YOUTUBE_API_KEY || ''
 
   const { data: sources } = await db.from('sources').select('*').eq('active', true)
-  if (!sources?.length) {
-    console.log("Nincs aktív forrás.")
-    return
-  }
+  if (!sources?.length) { console.log('Nincs aktív forrás.'); return }
 
-  console.log(`📺 ${sources.length} aktív csatorna`)
-
+  console.log(`📺 ${sources.length} csatorna figyelése`)
   let newArticles = 0
 
   for (const source of sources) {
-    if (newArticles >= MAX_NEW_ARTICLES_PER_RUN) {
-      console.log("\n✋ Napi limit elérve, megállás.")
-      break
-    }
+    if (newArticles >= MAX_NEW_PER_RUN) break
+    console.log(`\n📺 ${source.name}`)
 
-    console.log(`\n📺 ${source.name} (${source.language})`)
-
-    const videos = await getChannelVideos(source.channel_id, 15)
-    if (!videos.length) {
-      console.log("   Nincs videó vagy hiányzik az API kulcs")
-      continue
+    // RSS-sel próbáljuk először (gyorsabb, nincs API kvóta)
+    let videos = await getVideosFromRSS(source.channel_id)
+    if (videos.length === 0 && apiKey) {
+      console.log('   RSS üres, API fallback...')
+      videos = await getVideosFromAPI(source.channel_id, apiKey)
     }
+    console.log(`   ${videos.length} videó az RSS/API-ból`)
 
     for (const video of videos) {
-      if (newArticles >= MAX_NEW_ARTICLES_PER_RUN) break
+      if (newArticles >= MAX_NEW_PER_RUN) break
 
-      // 1. Már feldolgozva?
-      const { data: existing } = await db
-        .from('articles').select('id')
+      const { data: existing } = await db.from('articles').select('id')
         .eq('source_url', `https://www.youtube.com/watch?v=${video.videoId}`).single()
       if (existing) continue
 
-      // 2. Releváns cím?
-      if (!isRelevantTitle(video.title)) {
-        console.log(`   ⏭  Nem releváns: ${video.title}`)
+      if (!isRelevant(video.title)) {
+        console.log(`   ⏭  Nem releváns: ${video.title.slice(0, 60)}`)
         continue
       }
 
-      // 3. Elég hosszú? (40+ perc)
-      const duration = await getVideoDuration(video.videoId)
+      const duration = await getVideoDuration(video.videoId, apiKey)
       const durationMin = Math.round(duration / 60)
-      if (duration > 0 && duration < MIN_VIDEO_DURATION_SECONDS) {
-        console.log(`   ⏭  Túl rövid (${durationMin} perc): ${video.title}`)
+      if (duration > 0 && duration < MIN_DURATION_SEC) {
+        console.log(`   ⏭  Rövid (${durationMin} perc): ${video.title.slice(0, 50)}`)
         continue
       }
 
-      console.log(`\n   🎯 ${video.title} (${durationMin > 0 ? durationMin + ' perc' : 'ismeretlen hossz'})`)
+      console.log(`\n   🎯 ${video.title.slice(0, 70)} (${durationMin > 0 ? durationMin + ' perc' : '?'})`)
 
-      // 4. Felirat
-      process.stdout.write("   📄 Felirat... ")
+      process.stdout.write('   📄 Felirat... ')
       const transcriptData = await getTranscript(video.videoId)
-      if (!transcriptData || transcriptData.text.length < 5000) {
-        console.log("❌ Nincs/rövid felirat")
+      if (!transcriptData || transcriptData.text.length < MIN_TRANSCRIPT) {
+        console.log('❌ Nincs/rövid felirat')
         continue
       }
       console.log(`✅ ${transcriptData.text.length.toLocaleString()} kar`)
 
-      // 5. Cikk generálás
       let generated: any
       try {
         generated = await generateArticle(claude, transcriptData.text, video.title, transcriptData.lang)
         console.log(`   ✅ "${generated.title_hu}"`)
-      } catch (err: any) {
-        console.log(`   ❌ ${err.message}`)
-        continue
-      }
+      } catch (err: any) { console.log(`   ❌ ${err.message}`); continue }
 
       if (!generated.content_hu || generated.content_hu.length < 100) {
-        console.log("   ❌ Üres tartalom, kihagyva")
-        continue
+        console.log('   ❌ Üres tartalom'); continue
       }
 
-      // 6. Mentés
-      const videoDate = await getVideoDate(video.videoId)
-      const validTopics = (generated.topics || []).filter((t: string) => TOPICS_VALID.includes(t))
+      const videoDate = video.publishedAt.split('T')[0]
+      const validTopics = (generated.topics || []).filter((t: string) => VALID_TOPICS.includes(t))
       const slug = slugify(generated.title_hu || video.title, video.videoId)
 
       const { error: dbErr } = await db.from('articles').insert({
-        slug,
-        title_hu: generated.title_hu, title_en: generated.title_en,
+        slug, title_hu: generated.title_hu, title_en: generated.title_en,
         excerpt_hu: generated.excerpt_hu, excerpt_en: generated.excerpt_en,
         content_hu: generated.content_hu, content_en: generated.content_en,
-        topics: validTopics, level: generated.level || "advanced",
+        topics: validTopics, level: generated.level || 'advanced',
         runner_name: generated.runner_name || null,
-        discipline: validTopics.includes("backyard_ultra") ? "backyard_ultra" : "trail_ultra",
-        status: "ai_published",
-        published_at: new Date().toISOString(),
-        video_date: videoDate || null,
-        source_url: `https://www.youtube.com/watch?v=${video.videoId}`,
-        source_type: "youtube",
+        discipline: validTopics.includes('backyard_ultra') ? 'backyard_ultra' : 'trail_ultra',
+        status: 'ai_published', published_at: new Date().toISOString(),
+        video_date: videoDate, source_url: `https://www.youtube.com/watch?v=${video.videoId}`,
+        source_type: 'youtube',
       })
 
-      if (dbErr) {
-        console.log(`   ❌ DB hiba: ${dbErr.message}`)
-        continue
-      }
+      if (dbErr) { console.log(`   ❌ DB: ${dbErr.message}`); continue }
+      console.log('   ✅ Mentve → /ai')
 
-      // 7. Email
-      process.stdout.write("   📧 Email... ")
+      process.stdout.write('   📧 Email... ')
       try {
         await sendArticleReviewEmail({
           videoId: video.videoId, videoTitle: video.title,
           title_hu: generated.title_hu, title_en: generated.title_en,
           excerpt_hu: generated.excerpt_hu, excerpt_en: generated.excerpt_en,
           content_hu: generated.content_hu, content_en: generated.content_en,
-          topics: validTopics, level: generated.level || "advanced",
+          topics: validTopics, level: generated.level || 'advanced',
           runner_name: generated.runner_name || null,
           source_url: `https://www.youtube.com/watch?v=${video.videoId}`, slug,
         })
-        console.log("✅")
-      } catch (e: any) {
-        console.log(`⚠️  ${e.message}`)
-      }
+        console.log('✅')
+      } catch (e: any) { console.log(`⚠️  ${e.message}`) }
 
       await db.from('sources').update({ last_checked: new Date().toISOString() }).eq('id', source.id)
       newArticles++
     }
   }
 
-  console.log("\n" + "=".repeat(60))
+  console.log('\n' + '='.repeat(60))
   console.log(`\n✅ Kész! ${newArticles} új cikk generálva.\n`)
 }
 
-main().catch(err => {
-  console.error("\n❌ Fatális hiba:", err.message)
-  process.exit(1)
-})
+main().catch(err => { console.error('\n❌', err.message); process.exit(1) })
