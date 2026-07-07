@@ -17,7 +17,7 @@ export default function SearchAndFilter({ articles }: { articles: Article[] }) {
         keys: ["title", "excerpt", "athlete"],
         threshold: 0.35,
       }),
-    [articles]
+    [articles],
   );
 
   const filtered = useMemo(() => {
@@ -39,12 +39,12 @@ export default function SearchAndFilter({ articles }: { articles: Article[] }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Keresés cím, kivonat vagy futó neve alapján…"
-          className="flex-1 bg-[var(--color-surface)] border border-[var(--color-line)] px-4 py-3 text-[var(--color-bone)] placeholder:text-[var(--color-bone-muted)] focus:border-[var(--color-amber)] outline-none font-body"
+          className="flex-1 border border-[var(--color-line)] px-4 py-3 text-[var(--ink)] placeholder:text-[var(--mist)] focus:border-[#2A5A10] outline-none font-mono text-sm bg-white"
         />
         <select
           value={raceType}
           onChange={(e) => setRaceType(e.target.value as RaceType | "all")}
-          className="bg-[var(--color-surface)] border border-[var(--color-line)] px-4 py-3 text-[var(--color-bone)] font-mono text-sm focus:border-[var(--color-amber)] outline-none"
+          className="border border-[var(--color-line)] px-4 py-3 text-[var(--ink)] font-mono text-sm focus:border-[#2A5A10] outline-none bg-white"
         >
           <option value="all">Minden versenytípus</option>
           {ALL_RACE_TYPES.map((r) => (
@@ -56,7 +56,7 @@ export default function SearchAndFilter({ articles }: { articles: Article[] }) {
         <select
           value={topic}
           onChange={(e) => setTopic(e.target.value as Topic | "all")}
-          className="bg-[var(--color-surface)] border border-[var(--color-line)] px-4 py-3 text-[var(--color-bone)] font-mono text-sm focus:border-[var(--color-amber)] outline-none"
+          className="border border-[var(--color-line)] px-4 py-3 text-[var(--ink)] font-mono text-sm focus:border-[#2A5A10] outline-none bg-white"
         >
           <option value="all">Minden téma</option>
           {ALL_TOPICS.map((t) => (
@@ -69,7 +69,8 @@ export default function SearchAndFilter({ articles }: { articles: Article[] }) {
 
       {filtered.length === 0 ? (
         <p className="font-mono text-sm text-[var(--color-bone-muted)] py-12 text-center border border-dashed border-[var(--color-line)]">
-          Nincs találat ezzel a szűréssel — próbálj más kulcsszót vagy kategóriát.
+          Nincs találat ezzel a szűréssel — próbálj más kulcsszót vagy
+          kategóriát.
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
