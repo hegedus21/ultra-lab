@@ -42,7 +42,7 @@ export async function getVideoDate(videoId: string): Promise<string | null> {
 
 export async function getTranscript(videoId: string): Promise<{ text: string; lang: string } | null> {
   // Próbáljuk az összes releváns nyelvet
-  const langs = ['hu', 'en', 'ru', 'a.hu', 'a.en', 'a.ru']
+  const langs = ['hu', 'en', 'ru', 'a.hu', 'a.en', 'a.ru', 'hu-HU', 'en-US']
   for (const lang of langs) {
     try {
       const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang })
