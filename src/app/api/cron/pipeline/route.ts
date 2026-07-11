@@ -143,12 +143,6 @@ async function generateArticle(client: Anthropic, transcript: string, title: str
 const VALID_TOPICS = ["backyard_ultra", "nutrition", "training", "mental", "sleep", "gear", "race_strategy", "recovery"]
 
 export async function GET(request: Request) {
-  // Vercel Cron authentikáció
-  const authHeader = request.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
