@@ -14,7 +14,7 @@ loopNumber: 2
 coverImage: "/images/phil_gore_start.jpg"
 ---
 
-![Phil Gore a Big's Backyard Ultra rajtján](/images/pphil_gore_start.jpg)
+![Phil Gore a Big's Backyard Ultra rajtján](/images/phil_gore_start.jpg)
 
 **Phil Gore** ausztrál ultramaratonista jelenleg a Backyard Ultra sportág legjobb aktív versenyzője. A **2025-ös Big's Backyard Ultran 114 körrel** győzött, miután a korábbi Dead Cow Gully Masters versenyen **119 körrel** felállította a jelenlegi világcsúcsot. Ausztráliából **33 órát utazott** a Tennessee állambeli Bell Buckle-be, Laz tanyájára — ahol a legendás Big's Backyard Ultra helyszíne található.
 
