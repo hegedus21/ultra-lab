@@ -4,13 +4,32 @@ import { fetch as undiciFetch, ProxyAgent } from 'undici'
 // Vercel/GitHub Actions szerver IP-ket a YouTube gyakran blokkolja feliratletöltésnél.
 // Ha be van állítva egy proxy URL (pl. Webshare: http://user:pass@p.webshare.io:80),
 // minden YouTube-hívás azon megy át; enélkül simán a sima fetch-et használjuk.
-const proxyUrl = process.env.YT_PROXY_URL
-const proxyDispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : null
+// Lusta inicializálás: nem modulbetöltéskor olvassuk az env var-t, mert az ESM
+// import-hoisting miatt a hívó scriptek dotenv.config()-ja ilyenkor még nem futott le.
+let proxyDispatcher: InstanceType<typeof ProxyAgent> | null | undefined
 
-const youtubeFetch = (proxyDispatcher
-  ? ((input: string, init?: RequestInit) =>
-      undiciFetch(input, { ...(init as any), dispatcher: proxyDispatcher }))
-  : fetch) as typeof fetch
+function getProxyDispatcher() {
+  if (proxyDispatcher === undefined) {
+    const proxyUrl = process.env.YT_PROXY_URL
+    proxyDispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : null
+    console.error(`   [youtube.ts] proxy konfigurálva: ${!!proxyDispatcher}`)
+  }
+  return proxyDispatcher
+}
+
+const youtubeFetch = (async (input: any, init?: RequestInit) => {
+  const dispatcher = getProxyDispatcher()
+  const res = dispatcher
+    ? await undiciFetch(input, { ...(init as any), dispatcher })
+    : await fetch(input, init)
+  if (!res.ok) {
+    try {
+      const preview = (await res.clone().text()).slice(0, 120).replace(/\s+/g, ' ')
+      console.error(`   [fetch hiba] ${res.status} ${String(input).slice(0, 90)} :: ${preview}`)
+    } catch { }
+  }
+  return res
+}) as typeof fetch
 
 export async function getVideoTitle(videoId: string): Promise<string> {
   try {

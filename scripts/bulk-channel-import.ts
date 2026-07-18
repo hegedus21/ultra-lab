@@ -154,6 +154,8 @@ async function extractKeyFacts(client: Anthropic, segment: string, n: number, to
       role: "user",
       content: `Ultrafutós interjú ${n}/${total}. része (${langLabel(lang)}).
 Emeld ki a legfontosabb konkrét infókat: számok, adatok, edzésmódszerek, táplálkozás, felszerelés, mentális technikák, személyes történetek.
+Ha van egy erős, idézhető mondat, másold ki szó szerint "IDÉZET:" előtaggal.
+Csak azt írd le, amiről a szövegben ténylegesen szó esik – ne egészítsd ki, ne találj ki új tényeket vagy számokat.
 Max 350 szó, csak konkrétumok.
 
 SZÖVEG:
@@ -181,7 +183,7 @@ async function generateArticle(client: Anthropic, transcript: string, title: str
   process.stdout.write('      ✍️  Cikk... ')
   const res = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 4000,
+    max_tokens: 8000,
     messages: [{
       role: "user",
       content: `Ultra Lab tudástár szerkesztő vagy. Videó: "${title}" (${langLabel(lang)})
@@ -189,7 +191,22 @@ async function generateArticle(client: Anthropic, transcript: string, title: str
 Tények:
 ${facts.join('\n\n')}
 
-Írj cikket. CSAK JSON, aposztrófot használj idézőjel helyett:
+Írj egy magazin-jellegű profilcikket a fenti tényekre támaszkodva.
+
+STÍLUS:
+- Nyitó bekezdés: mutasd be a versenyzőt/témát egy konkrét ténnyel, **félkövérrel** kiemelve a nevet és a legfontosabb számot
+- ## alcímek tematikusan/időrendben, történetmesélő ívvel – ne csak témák felsorolása legyen
+- Ha a Tények közt van "IDÉZET:", emeld ki > blockquote formában
+- Konkrét adatokat bullet listákban csoportosítva az adott alcím alatt
+- Zárás "## Összefoglalás" szakasszal, **félkövér** bullet listával a legfontosabb tanulságokról
+
+SZIGORÚ SZABÁLYOK:
+- Kizárólag a fenti Tények szekcióban szereplő infót használd. Ne találj ki, ne extrapolálj számokat, díjakat, összegeket vagy állításokat, amik nincsenek ott explicit megadva. Bizonytalan adatot inkább hagyj ki.
+- A content_hu TISZTÁN magyarul íródjon – ne maradjon benne idegen (angol/orosz/német) szó, ha van rá magyar megfelelő.
+- A title_hu legyen konkrét és figyelemfelkeltő, a versenyző nevét és a fő tanulságot/történetet emelje ki – NE statisztika-felsorolás jellegű legyen.
+- runner_name mezőbe MINDIG írd be az interjúalany nevét, ha az a tényekből azonosítható.
+
+CSAK JSON-t adj vissza (a stringekben valódi \n sortörésekkel, ne dupla escape-eld), aposztróf idézőjel helyett:
 {
   "title_hu": "max 80 kar",
   "title_en": "max 80 chars",
@@ -210,7 +227,13 @@ ${facts.join('\n\n')}
     const lc = text.lastIndexOf('",\n')
     text = lc > 0 ? text.slice(0, lc + 1) + '\n  "level": "advanced",\n  "runner_name": null\n}' : text + '"}'
   }
-  try { return JSON.parse(text) }
+  try {
+    const parsed = JSON.parse(text)
+    // Néha duplán escape-eli a modell a sortöréseket a JSON stringen belül
+    if (typeof parsed.content_hu === 'string') parsed.content_hu = parsed.content_hu.replace(/\\n/g, '\n')
+    if (typeof parsed.content_en === 'string') parsed.content_en = parsed.content_en.replace(/\\n/g, '\n')
+    return parsed
+  }
   catch {
     return { title_hu: title, title_en: title, excerpt_hu: '', excerpt_en: '', content_hu: '', content_en: '', topics: ['training'], level: 'advanced', runner_name: null }
   }
