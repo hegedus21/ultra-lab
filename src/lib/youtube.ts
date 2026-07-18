@@ -1,4 +1,16 @@
 import { YoutubeTranscript } from 'youtube-transcript'
+import { fetch as undiciFetch, ProxyAgent } from 'undici'
+
+// Vercel/GitHub Actions szerver IP-ket a YouTube gyakran blokkolja feliratletöltésnél.
+// Ha be van állítva egy proxy URL (pl. Webshare: http://user:pass@p.webshare.io:80),
+// minden YouTube-hívás azon megy át; enélkül simán a sima fetch-et használjuk.
+const proxyUrl = process.env.YT_PROXY_URL
+const proxyDispatcher = proxyUrl ? new ProxyAgent(proxyUrl) : null
+
+const youtubeFetch = (proxyDispatcher
+  ? ((input: string, init?: RequestInit) =>
+      undiciFetch(input, { ...(init as any), dispatcher: proxyDispatcher }))
+  : fetch) as typeof fetch
 
 export async function getVideoTitle(videoId: string): Promise<string> {
   try {
@@ -29,7 +41,7 @@ export async function getVideoDate(videoId: string): Promise<string | null> {
   }
   // Fallback: HTML scraping
   try {
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    const res = await youtubeFetch(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: { 'User-Agent': 'Mozilla/5.0' }
     })
     const html = await res.text()
@@ -43,25 +55,30 @@ export async function getVideoDate(videoId: string): Promise<string | null> {
 export async function getTranscript(videoId: string): Promise<{ text: string; lang: string } | null> {
   // Próbáljuk az összes releváns nyelvet
   const langs = ['hu', 'en', 'ru', 'a.hu', 'a.en', 'a.ru', 'hu-HU', 'en-US']
+  let lastError: unknown = null
   for (const lang of langs) {
     try {
-      const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang })
+      const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang, fetch: youtubeFetch })
       if (transcript && transcript.length > 0) {
         const text = transcript.map((t: any) => t.text).join(' ')
         if (text.length > 300) {
           return { text, lang: lang.replace('a.', '') }
         }
       }
-    } catch { }
+    } catch (e) { lastError = e }
   }
   // Utolsó próba: nyelv nélkül
   try {
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId)
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId, { fetch: youtubeFetch })
     if (transcript && transcript.length > 0) {
       const text = transcript.map((t: any) => t.text).join(' ')
       if (text.length > 300) return { text, lang: 'hu' }
     }
-  } catch { }
+  } catch (e) { lastError = e }
+  if (lastError) {
+    const msg = lastError instanceof Error ? lastError.message : String(lastError)
+    console.error(`   [transcript hiba] ${videoId}: ${msg}`)
+  }
   return null
 }
 
