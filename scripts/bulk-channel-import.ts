@@ -40,11 +40,11 @@ const DRY_RUN = args.includes('--dry-run')
 
 const RELEVANT_KEYWORDS = [
   'ultra', 'marathon', 'maraton', 'backyard', 'trail', 'running', 'futás', 'futó',
-  'бег', 'ультра', 'марафон', 'трейл', 'endurance', 'kitartás', 'ironman',
+  'бег', 'ультра', 'марафон', 'трейл', 'бэкъярд', 'endurance', 'kitartás', 'ironman',
   'nutrition', 'táplálkozás', 'питание', 'training', 'edzés', 'тренировка',
   'mental', 'mentális', 'mitochondria', 'mitokondrium', 'митохондрии',
   'race', 'verseny', 'spartatlon', 'balaton', '100km', '100 km', '100 mile',
-  'health', 'egészség', 'здоровье', 'recovery', 'regeneráció',
+  'health', 'egészség', 'здоровье', 'recovery', 'regeneráció', 'biotropika',
 ]
 
 const IRRELEVANT_KEYWORDS = ['#short', 'shorts', 'clip', 'promo', 'trailer', 'teaser']

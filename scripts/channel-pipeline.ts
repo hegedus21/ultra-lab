@@ -21,10 +21,11 @@ const MIN_DURATION_SEC = 40 * 60
 
 const RELEVANT = [
   'ultra', 'marathon', 'maraton', 'backyard', 'trail', 'running', 'futás', 'futó',
-  'бег', 'ультра', 'марафон', 'трейл', 'endurance', 'kitartás', 'ironman',
+  'бег', 'ультра', 'марафон', 'трейл', 'бэкъярд', 'endurance', 'kitartás', 'ironman',
   'nutrition', 'táplálkozás', 'питание', 'training', 'edzés', 'тренировка',
   'mental', 'mentális', 'mitochondria', 'митохондрии', 'race', 'verseny',
   'spartatlon', 'balaton', '100km', '100 km', '100 mile', 'health', 'egészség', 'здоровье',
+  'biotropika',
 ]
 const IRRELEVANT = ['#short', 'shorts', 'clip', 'promo', 'trailer', 'teaser']
 
